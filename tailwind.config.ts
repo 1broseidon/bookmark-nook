@@ -42,6 +42,10 @@ export default {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
+        theme: {
+          DEFAULT: "#9b87f5",
+          dark: "#7E69AB",
+        },
       },
       keyframes: {
         "fade-in": {

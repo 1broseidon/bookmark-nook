@@ -2,6 +2,7 @@ import { useState } from "react";
 import BookmarkForm from "@/components/BookmarkForm";
 import BookmarkGrid from "@/components/BookmarkGrid";
 import SearchBar from "@/components/SearchBar";
+import ThemeToggle from "@/components/ThemeToggle";
 import { Bookmark } from "@/types/bookmark";
 import { toast } from "@/components/ui/use-toast";
 
@@ -43,13 +44,14 @@ const Index = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA]">
+    <div className="min-h-screen bg-background transition-colors duration-300">
+      <ThemeToggle />
       <div className="container py-16 space-y-12 max-w-7xl mx-auto px-6">
         <div className="text-center space-y-4">
-          <h1 className="text-5xl font-light tracking-tight text-gray-900">
+          <h1 className="text-5xl font-light tracking-tight">
             Bookmark Manager
           </h1>
-          <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Save and organize your favorite links in a beautiful, minimalist space
           </p>
         </div>
@@ -57,7 +59,7 @@ const Index = () => {
           <BookmarkForm onSubmit={addBookmark} />
           <SearchBar value={search} onChange={setSearch} />
           {bookmarks.length === 0 ? (
-            <div className="text-center py-24 text-gray-400 bg-white/50 backdrop-blur-sm rounded-2xl border border-gray-100">
+            <div className="text-center py-24 text-muted-foreground bg-background/50 backdrop-blur-sm rounded-2xl border border-theme/20">
               <p className="text-xl font-light">No bookmarks yet.</p>
               <p className="text-base mt-2">Add your first one above!</p>
             </div>
