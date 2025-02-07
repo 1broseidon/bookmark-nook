@@ -19,16 +19,16 @@ const BookmarkForm = ({ onSubmit }: BookmarkFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2 w-full max-w-xl mx-auto">
+    <form onSubmit={handleSubmit} className="flex gap-3 w-full max-w-2xl mx-auto">
       <Input
         type="url"
         placeholder="Enter URL to bookmark..."
         value={url}
         onChange={(e) => setUrl(e.target.value)}
-        className="flex-1"
+        className="flex-1 h-12 bg-white/70 backdrop-blur-sm border-gray-200 placeholder:text-gray-400"
       />
-      <Button type="submit">
-        <Plus className="h-4 w-4 mr-2" />
+      <Button type="submit" className="h-12 px-6">
+        <Plus className="h-5 w-5 mr-2" />
         Add
       </Button>
     </form>

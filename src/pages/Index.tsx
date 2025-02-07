@@ -10,7 +10,6 @@ const Index = () => {
   const [search, setSearch] = useState("");
 
   const addBookmark = async (url: string) => {
-    // In a real app, this would fetch metadata from an API
     const newBookmark: Bookmark = {
       id: Date.now().toString(),
       url,
@@ -44,20 +43,23 @@ const Index = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container py-8 space-y-8">
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold">Bookmark Manager</h1>
-          <p className="text-muted-foreground">
-            Save and organize your favorite links
+    <div className="min-h-screen bg-[#F8F9FA]">
+      <div className="container py-16 space-y-12 max-w-7xl mx-auto px-6">
+        <div className="text-center space-y-4">
+          <h1 className="text-5xl font-light tracking-tight text-gray-900">
+            Bookmark Manager
+          </h1>
+          <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+            Save and organize your favorite links in a beautiful, minimalist space
           </p>
         </div>
-        <div className="space-y-6">
+        <div className="space-y-8">
           <BookmarkForm onSubmit={addBookmark} />
           <SearchBar value={search} onChange={setSearch} />
           {bookmarks.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              No bookmarks yet. Add your first one above!
+            <div className="text-center py-24 text-gray-400 bg-white/50 backdrop-blur-sm rounded-2xl border border-gray-100">
+              <p className="text-xl font-light">No bookmarks yet.</p>
+              <p className="text-base mt-2">Add your first one above!</p>
             </div>
           ) : (
             <BookmarkGrid
