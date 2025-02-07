@@ -5,27 +5,50 @@ import SearchBar from "@/components/SearchBar";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Bookmark } from "@/types/bookmark";
 import { toast } from "@/components/ui/use-toast";
+import { Loader2 } from "lucide-react";
 
 const Index = () => {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [search, setSearch] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const addBookmark = async (url: string) => {
-    const newBookmark: Bookmark = {
-      id: Date.now().toString(),
-      url,
-      title: "Example Title",
-      description: "This is an example description for the bookmark.",
-      image: "https://picsum.photos/400/300",
-      tags: ["example", "new"],
-      createdAt: new Date(),
-    };
+    setIsLoading(true);
+    try {
+      const response = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch metadata');
+      }
 
-    setBookmarks((prev) => [newBookmark, ...prev]);
-    toast({
-      title: "Bookmark added",
-      description: "Your bookmark has been successfully added.",
-    });
+      const { title, description, image, publisher } = data.data;
+      
+      const newBookmark: Bookmark = {
+        id: Date.now().toString(),
+        url,
+        title: title || url,
+        description: description || 'No description available',
+        image: image?.url,
+        tags: publisher ? [publisher] : [],
+        createdAt: new Date(),
+      };
+
+      setBookmarks((prev) => [newBookmark, ...prev]);
+      toast({
+        title: "Bookmark added",
+        description: "Your bookmark has been successfully added.",
+      });
+    } catch (error) {
+      console.error('Error fetching metadata:', error);
+      toast({
+        title: "Error adding bookmark",
+        description: "Failed to fetch metadata for the URL. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const deleteBookmark = (id: string) => {
@@ -56,7 +79,7 @@ const Index = () => {
           </p>
         </div>
         <div className="space-y-8">
-          <BookmarkForm onSubmit={addBookmark} />
+          <BookmarkForm onSubmit={addBookmark} isLoading={isLoading} />
           <SearchBar value={search} onChange={setSearch} />
           {bookmarks.length === 0 ? (
             <div className="text-center py-24 text-muted-foreground bg-background/50 backdrop-blur-sm rounded-2xl border border-theme/20">
