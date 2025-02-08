@@ -11,9 +11,13 @@ export const useFolders = () => {
 
   const fetchFolders = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
       const { data: folders, error } = await supabase
         .from('folders')
         .select('*')
+        .eq('user_id', session.user.id)
         .order('position');
 
       if (error) throw error;
@@ -79,16 +83,21 @@ export const useFolders = () => {
     const [removed] = newFolders.splice(startIndex, 1);
     newFolders.splice(endIndex, 0, removed);
 
-    setFolders(newFolders);
+    // Update positions in the local state immediately
+    const updatedFolders = newFolders.map((folder, index) => ({
+      ...folder,
+      position: index
+    }));
+    setFolders(updatedFolders);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const updates = newFolders.map((folder, index) => ({
+      const updates = updatedFolders.map(folder => ({
         id: folder.id,
         name: folder.name,
-        position: index,
+        position: folder.position,
         user_id: session.user.id
       }));
 
@@ -98,11 +107,13 @@ export const useFolders = () => {
 
       if (error) throw error;
     } catch (error: any) {
+      // Revert the local state if the server update fails
       toast({
         title: "Error updating folder order",
         description: error.message,
         variant: "destructive",
       });
+      await fetchFolders(); // Reload the original order
     }
   };
 

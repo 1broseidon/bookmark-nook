@@ -17,6 +17,7 @@ export const useBookmarks = () => {
       const { data: bookmarks, error } = await supabase
         .from('bookmarks')
         .select('*')
+        .eq('user_id', session.user.id)
         .order('position');
 
       if (error) throw error;
@@ -153,12 +154,19 @@ export const useBookmarks = () => {
 
       if (error) throw error;
 
-      setBookmarks(prev => prev.map(b => {
-        if (b.id === bookmarkId) {
-          return { ...b, folderId, position: newPosition };
-        }
-        return b;
-      }));
+      setBookmarks(prev => {
+        const updatedBookmarks = prev.map(b => {
+          if (b.id === bookmarkId) {
+            return { ...b, folderId, position: newPosition };
+          }
+          // Adjust positions of other bookmarks in the same folder
+          if (b.folderId === folderId && b.position >= newPosition) {
+            return { ...b, position: b.position + 1 };
+          }
+          return b;
+        });
+        return updatedBookmarks.sort((a, b) => a.position - b.position);
+      });
     } catch (error: any) {
       toast({
         title: "Error moving bookmark",
@@ -190,12 +198,17 @@ export const useBookmarks = () => {
         .upsert(updates);
 
       if (error) throw error;
+
+      // Update local state to match server state
+      setBookmarks(items);
     } catch (error: any) {
       toast({
         title: "Error updating bookmark order",
         description: error.message,
         variant: "destructive",
       });
+      // Reload original order if server update fails
+      await fetchBookmarks();
     }
   };
 
