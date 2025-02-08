@@ -3,7 +3,8 @@ import BookmarkForm from "@/components/BookmarkForm";
 import BookmarkGrid from "@/components/BookmarkGrid";
 import SearchBar from "@/components/SearchBar";
 import ThemeToggle from "@/components/ThemeToggle";
-import { Bookmark } from "@/types/bookmark";
+import ViewToggle from "@/components/ViewToggle";
+import { Bookmark, ViewMode } from "@/types/bookmark";
 import { toast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
 
@@ -11,6 +12,7 @@ const Index = () => {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
   const addBookmark = async (url: string) => {
     setIsLoading(true);
@@ -80,7 +82,10 @@ const Index = () => {
         </div>
         <div className="space-y-8">
           <BookmarkForm onSubmit={addBookmark} isLoading={isLoading} />
-          <SearchBar value={search} onChange={setSearch} />
+          <div className="flex items-center justify-between gap-4 max-w-2xl mx-auto">
+            <SearchBar value={search} onChange={setSearch} />
+            <ViewToggle viewMode={viewMode} onViewChange={setViewMode} />
+          </div>
           {bookmarks.length === 0 ? (
             <div className="text-center py-24 text-muted-foreground bg-background/50 backdrop-blur-sm rounded-2xl border border-theme/20">
               <p className="text-xl font-light">No bookmarks yet.</p>
@@ -90,6 +95,7 @@ const Index = () => {
             <BookmarkGrid
               bookmarks={filteredBookmarks}
               onDelete={deleteBookmark}
+              viewMode={viewMode}
             />
           )}
         </div>
