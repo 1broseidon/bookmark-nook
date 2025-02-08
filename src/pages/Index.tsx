@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import BookmarkForm from "@/components/BookmarkForm";
@@ -125,9 +126,14 @@ const Index = () => {
     setFolders(newFolders);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
       const updates = newFolders.map((folder, index) => ({
         id: folder.id,
+        name: folder.name,
         position: index,
+        user_id: session.user.id
       }));
 
       const { error } = await supabase
@@ -146,11 +152,23 @@ const Index = () => {
 
   const moveBookmark = async (bookmarkId: string, folderId: string | null, newPosition: number) => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const bookmark = bookmarks.find(b => b.id === bookmarkId);
+      if (!bookmark) return;
+
       const { error } = await supabase
         .from('bookmarks')
         .update({
           folder_id: folderId,
           position: newPosition,
+          user_id: session.user.id,
+          title: bookmark.title,
+          url: bookmark.url,
+          description: bookmark.description,
+          image_url: bookmark.image,
+          tags: bookmark.tags
         })
         .eq('id', bookmarkId);
 
@@ -193,9 +211,19 @@ const Index = () => {
 
       // Update positions in the database
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
         const updates = items.map((bookmark, index) => ({
           id: bookmark.id,
           position: index,
+          title: bookmark.title,
+          url: bookmark.url,
+          description: bookmark.description,
+          image_url: bookmark.image,
+          tags: bookmark.tags,
+          user_id: session.user.id,
+          folder_id: bookmark.folderId
         }));
 
         const { error } = await supabase
