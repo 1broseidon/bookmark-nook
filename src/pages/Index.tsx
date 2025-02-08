@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import BookmarkForm from "@/components/BookmarkForm";
@@ -77,10 +78,15 @@ const Index = () => {
 
       const { error } = await supabase
         .from('user_preferences')
-        .upsert({
-          user_id: session.user.id,
-          view_mode: mode
-        });
+        .upsert(
+          {
+            user_id: session.user.id,
+            view_mode: mode
+          },
+          {
+            onConflict: 'user_id'
+          }
+        );
 
       if (error) throw error;
 
