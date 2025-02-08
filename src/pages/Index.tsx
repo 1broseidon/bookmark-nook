@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import BookmarkForm from "@/components/BookmarkForm";
@@ -19,16 +18,81 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [isLoadingBookmarks, setIsLoadingBookmarks] = useState(true);
+  const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
 
   useEffect(() => {
     checkUser();
     fetchBookmarks();
+    fetchUserPreferences();
   }, []);
 
   const checkUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       navigate('/auth');
+    }
+  };
+
+  const fetchUserPreferences = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data: preferences, error } = await supabase
+        .from('user_preferences')
+        .select('view_mode')
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (preferences) {
+        setViewMode(preferences.view_mode as ViewMode);
+      } else {
+        // Create default preferences if none exist
+        const { error: insertError } = await supabase
+          .from('user_preferences')
+          .insert({
+            user_id: session.user.id,
+            view_mode: 'grid'
+          });
+
+        if (insertError) throw insertError;
+      }
+    } catch (error: any) {
+      console.error('Error fetching user preferences:', error);
+      toast({
+        title: "Error fetching preferences",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingPreferences(false);
+    }
+  };
+
+  const updateViewMode = async (mode: ViewMode) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { error } = await supabase
+        .from('user_preferences')
+        .upsert({
+          user_id: session.user.id,
+          view_mode: mode
+        });
+
+      if (error) throw error;
+
+      setViewMode(mode);
+      
+    } catch (error: any) {
+      console.error('Error updating view mode:', error);
+      toast({
+        title: "Error updating view mode",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -167,6 +231,14 @@ const Index = () => {
       b.tags?.some((tag) => tag.toLowerCase().includes(search.toLowerCase()))
   );
 
+  if (isLoadingPreferences) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background transition-colors duration-300">
       <div className="fixed top-4 right-4 flex items-center gap-4">
@@ -193,7 +265,7 @@ const Index = () => {
           <BookmarkForm onSubmit={addBookmark} isLoading={isLoading} />
           <div className="flex items-center justify-between gap-4 max-w-2xl mx-auto">
             <SearchBar value={search} onChange={setSearch} />
-            <ViewToggle viewMode={viewMode} onViewChange={setViewMode} />
+            <ViewToggle viewMode={viewMode} onViewChange={updateViewMode} />
           </div>
           {isLoadingBookmarks ? (
             <div className="text-center py-24">
