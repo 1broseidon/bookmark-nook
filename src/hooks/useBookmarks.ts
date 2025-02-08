@@ -96,7 +96,10 @@ export const useBookmarks = () => {
       setBookmarks(updatedBookmarks);
 
       // Attempt database update
-      await moveBookmark(bookmark, folderId, newPosition);
+      const result = await moveBookmark(bookmark, folderId, newPosition);
+      if (!result) {
+        throw new Error('Failed to move bookmark');
+      }
     } catch (error: any) {
       // Revert to original state on error
       setBookmarks(bookmarks);
@@ -119,9 +122,24 @@ export const useBookmarks = () => {
       // Update positions in database
       const updatedItems = await updateBookmarkPositions(items);
       
-      if (!updatedItems) {
+      if (!updatedItems || updatedItems.length === 0) {
         throw new Error('Failed to update bookmark positions');
       }
+
+      // Update state with the server response
+      const mappedBookmarks = updatedItems.map(b => ({
+        id: b.id,
+        url: b.url,
+        title: b.title,
+        description: b.description || 'No description available',
+        image: b.image_url,
+        tags: b.tags || [],
+        folderId: b.folder_id,
+        position: b.position,
+        createdAt: new Date(b.created_at),
+      }));
+      
+      setBookmarks(mappedBookmarks);
     } catch (error: any) {
       // Revert to original state on error
       setBookmarks(bookmarks);

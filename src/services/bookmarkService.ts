@@ -111,26 +111,40 @@ export const updateBookmarkPositions = async (items: Bookmark[]) => {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return;
 
+  // Create an array of updates with all required fields
   const updates = items.map((bookmark, index) => ({
     id: bookmark.id,
-    position: index, // Update position based on array index
+    position: index,
     title: bookmark.title,
     url: bookmark.url,
-    description: bookmark.description,
+    description: bookmark.description || 'No description available',
     image_url: bookmark.image,
-    tags: bookmark.tags,
+    tags: bookmark.tags || [],
     user_id: session.user.id,
     folder_id: bookmark.folderId,
     updated_at: new Date().toISOString()
   }));
 
-  const { data, error } = await supabase
+  // Perform the upsert operation
+  const { error } = await supabase
     .from('bookmarks')
     .upsert(updates, {
-      onConflict: 'id',
-      returning: true
+      onConflict: 'id'
     });
 
-  if (error) throw error;
-  return data;
+  if (error) {
+    console.error('Error updating bookmark positions:', error);
+    throw error;
+  }
+
+  // Fetch the updated bookmarks to return the latest state
+  const { data: updatedBookmarks, error: fetchError } = await supabase
+    .from('bookmarks')
+    .select('*')
+    .eq('user_id', session.user.id)
+    .in('id', items.map(item => item.id))
+    .order('position');
+
+  if (fetchError) throw fetchError;
+  return updatedBookmarks;
 };
