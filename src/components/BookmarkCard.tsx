@@ -56,14 +56,14 @@ const BookmarkCard = ({
           </div>
           <div className="flex items-center gap-2">
             <Select
-              value={bookmark.folderId || ""}
-              onValueChange={(value) => onMoveToFolder(bookmark.id, value || null)}
+              value={bookmark.folderId || "none"}
+              onValueChange={(value) => onMoveToFolder(bookmark.id, value === "none" ? null : value)}
             >
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Select folder" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No folder</SelectItem>
+                <SelectItem value="none">No folder</SelectItem>
                 {folders.map((folder) => (
                   <SelectItem key={folder.id} value={folder.id}>
                     {folder.name}
@@ -137,8 +137,8 @@ const BookmarkCard = ({
         </p>
         <div className="flex items-center justify-between gap-4">
           <Select
-            value={bookmark.folderId || ""}
-            onValueChange={(value) => onMoveToFolder(bookmark.id, value || null)}
+            value={bookmark.folderId || "none"}
+            onValueChange={(value) => onMoveToFolder(bookmark.id, value === "none" ? null : value)}
           >
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Select folder">
@@ -149,7 +149,7 @@ const BookmarkCard = ({
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">No folder</SelectItem>
+              <SelectItem value="none">No folder</SelectItem>
               {folders.map((folder) => (
                 <SelectItem key={folder.id} value={folder.id}>
                   {folder.name}
@@ -176,3 +176,4 @@ const BookmarkCard = ({
 };
 
 export default BookmarkCard;
+
