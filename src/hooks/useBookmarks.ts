@@ -138,6 +138,20 @@ export const useBookmarks = () => {
       const bookmark = bookmarks.find(b => b.id === bookmarkId);
       if (!bookmark) return;
 
+      // Update local state optimistically
+      const updatedBookmarks = bookmarks.map(b => {
+        if (b.id === bookmarkId) {
+          return { ...b, folderId, position: newPosition };
+        }
+        // Adjust positions of other bookmarks in the same folder
+        if (b.folderId === folderId && b.position >= newPosition) {
+          return { ...b, position: b.position + 1 };
+        }
+        return b;
+      }).sort((a, b) => a.position - b.position);
+
+      setBookmarks(updatedBookmarks);
+
       const { error } = await supabase
         .from('bookmarks')
         .update({
@@ -148,31 +162,19 @@ export const useBookmarks = () => {
           url: bookmark.url,
           description: bookmark.description,
           image_url: bookmark.image,
-          tags: bookmark.tags
+          tags: bookmark.tags,
+          updated_at: new Date().toISOString()
         })
         .eq('id', bookmarkId);
 
       if (error) throw error;
-
-      setBookmarks(prev => {
-        const updatedBookmarks = prev.map(b => {
-          if (b.id === bookmarkId) {
-            return { ...b, folderId, position: newPosition };
-          }
-          // Adjust positions of other bookmarks in the same folder
-          if (b.folderId === folderId && b.position >= newPosition) {
-            return { ...b, position: b.position + 1 };
-          }
-          return b;
-        });
-        return updatedBookmarks.sort((a, b) => a.position - b.position);
-      });
     } catch (error: any) {
       toast({
         title: "Error moving bookmark",
         description: error.message,
         variant: "destructive",
       });
+      await fetchBookmarks(); // Revert to original state on error
     }
   };
 
@@ -181,34 +183,36 @@ export const useBookmarks = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const updates = items.map((bookmark, index) => ({
+      // Update local state optimistically
+      setBookmarks(items);
+
+      const updates = items.map(bookmark => ({
         id: bookmark.id,
-        position: index,
+        position: bookmark.position,
         title: bookmark.title,
         url: bookmark.url,
         description: bookmark.description,
         image_url: bookmark.image,
         tags: bookmark.tags,
         user_id: session.user.id,
-        folder_id: bookmark.folderId
+        folder_id: bookmark.folderId,
+        updated_at: new Date().toISOString()
       }));
 
       const { error } = await supabase
         .from('bookmarks')
-        .upsert(updates);
+        .upsert(updates, {
+          onConflict: 'id'
+        });
 
       if (error) throw error;
-
-      // Update local state to match server state
-      setBookmarks(items);
     } catch (error: any) {
       toast({
         title: "Error updating bookmark order",
         description: error.message,
         variant: "destructive",
       });
-      // Reload original order if server update fails
-      await fetchBookmarks();
+      await fetchBookmarks(); // Revert to original state on error
     }
   };
 

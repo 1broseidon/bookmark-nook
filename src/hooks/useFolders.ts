@@ -83,27 +83,33 @@ export const useFolders = () => {
     const [removed] = newFolders.splice(startIndex, 1);
     newFolders.splice(endIndex, 0, removed);
 
-    // Update positions in the local state immediately
+    // Update positions
     const updatedFolders = newFolders.map((folder, index) => ({
       ...folder,
       position: index
     }));
+
+    // Optimistically update the state
     setFolders(updatedFolders);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
+      // Prepare updates with all required fields
       const updates = updatedFolders.map(folder => ({
         id: folder.id,
         name: folder.name,
         position: folder.position,
-        user_id: session.user.id
+        user_id: session.user.id,
+        updated_at: new Date().toISOString()
       }));
 
       const { error } = await supabase
         .from('folders')
-        .upsert(updates);
+        .upsert(updates, {
+          onConflict: 'id'
+        });
 
       if (error) throw error;
     } catch (error: any) {
@@ -113,7 +119,7 @@ export const useFolders = () => {
         description: error.message,
         variant: "destructive",
       });
-      await fetchFolders(); // Reload the original order
+      await fetchFolders();
     }
   };
 
