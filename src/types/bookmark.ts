@@ -1,3 +1,4 @@
+
 export interface Bookmark {
   id: string;
   url: string;
@@ -7,3 +8,5 @@ export interface Bookmark {
   tags?: string[];
   createdAt: Date;
 }
+
+export type ViewMode = 'grid' | 'list';
