@@ -86,7 +86,7 @@ export const moveBookmark = async (bookmark: Bookmark, folderId: string | null, 
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return;
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('bookmarks')
     .update({
       folder_id: folderId,
@@ -99,18 +99,21 @@ export const moveBookmark = async (bookmark: Bookmark, folderId: string | null, 
       tags: bookmark.tags,
       updated_at: new Date().toISOString()
     })
-    .eq('id', bookmark.id);
+    .eq('id', bookmark.id)
+    .select()
+    .single();
 
   if (error) throw error;
+  return data;
 };
 
 export const updateBookmarkPositions = async (items: Bookmark[]) => {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return;
 
-  const updates = items.map(bookmark => ({
+  const updates = items.map((bookmark, index) => ({
     id: bookmark.id,
-    position: bookmark.position,
+    position: index, // Update position based on array index
     title: bookmark.title,
     url: bookmark.url,
     description: bookmark.description,
@@ -121,11 +124,13 @@ export const updateBookmarkPositions = async (items: Bookmark[]) => {
     updated_at: new Date().toISOString()
   }));
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('bookmarks')
     .upsert(updates, {
-      onConflict: 'id'
+      onConflict: 'id',
+      returning: true
     });
 
   if (error) throw error;
+  return data;
 };

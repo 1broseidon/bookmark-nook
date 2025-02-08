@@ -53,13 +53,18 @@ export const useBookmarks = () => {
 
   const removeBookmark = async (id: string) => {
     try {
-      await deleteBookmark(id);
+      // Optimistic update
+      const originalBookmarks = [...bookmarks];
       setBookmarks((prev) => prev.filter((b) => b.id !== id));
+      
+      await deleteBookmark(id);
       toast({
         title: "Bookmark deleted",
         description: "Your bookmark has been removed.",
       });
     } catch (error: any) {
+      // Revert on error
+      setBookmarks(bookmarks);
       toast({
         title: "Error deleting bookmark",
         description: error.message,
@@ -73,7 +78,10 @@ export const useBookmarks = () => {
       const bookmark = bookmarks.find(b => b.id === bookmarkId);
       if (!bookmark) return;
 
-      // Update local state optimistically
+      // Store original state for rollback
+      const originalBookmarks = [...bookmarks];
+
+      // Optimistic update
       const updatedBookmarks = bookmarks.map(b => {
         if (b.id === bookmarkId) {
           return { ...b, folderId, position: newPosition };
@@ -87,29 +95,41 @@ export const useBookmarks = () => {
 
       setBookmarks(updatedBookmarks);
 
+      // Attempt database update
       await moveBookmark(bookmark, folderId, newPosition);
     } catch (error: any) {
+      // Revert to original state on error
+      setBookmarks(bookmarks);
       toast({
         title: "Error moving bookmark",
         description: error.message,
         variant: "destructive",
       });
-      await fetchBookmarks(); // Revert to original state on error
     }
   };
 
   const updateBookmarkOrder = async (items: Bookmark[]) => {
     try {
-      // Update local state optimistically
+      // Store original state for rollback
+      const originalBookmarks = [...bookmarks];
+      
+      // Optimistic update
       setBookmarks(items);
-      await updateBookmarkPositions(items);
+
+      // Update positions in database
+      const updatedItems = await updateBookmarkPositions(items);
+      
+      if (!updatedItems) {
+        throw new Error('Failed to update bookmark positions');
+      }
     } catch (error: any) {
+      // Revert to original state on error
+      setBookmarks(bookmarks);
       toast({
         title: "Error updating bookmark order",
         description: error.message,
         variant: "destructive",
       });
-      await fetchBookmarks(); // Revert to original state on error
     }
   };
 
