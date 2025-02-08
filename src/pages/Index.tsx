@@ -34,6 +34,9 @@ const Index = () => {
 
   const fetchBookmarks = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
       const { data: bookmarks, error } = await supabase
         .from('bookmarks')
         .select('*')
@@ -64,6 +67,11 @@ const Index = () => {
   const addBookmark = async (url: string) => {
     setIsLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('You must be logged in to add bookmarks');
+      }
+
       const response = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`);
       const data = await response.json();
       
@@ -81,6 +89,7 @@ const Index = () => {
           description: description || 'No description available',
           image_url: image?.url,
           tags: publisher ? [publisher] : [],
+          user_id: session.user.id // Add this line to set the user_id
         })
         .select()
         .single();
