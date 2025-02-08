@@ -21,7 +21,7 @@ const ThemeToggle = () => {
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
     setTheme(newTheme);
-    document.documentElement.classList.toggle("dark");
+    document.documentElement.classList.toggle("dark", newTheme === "dark");
     localStorage.setItem("theme", newTheme);
   };
 
@@ -30,10 +30,20 @@ const ThemeToggle = () => {
       variant="ghost"
       size="icon"
       onClick={toggleTheme}
-      className="h-10 w-10 rounded-full bg-background/50 backdrop-blur-sm border border-theme/20 hover:bg-background/80"
+      className="relative h-10 w-10 rounded-full bg-background/50 backdrop-blur-sm border border-theme/20 hover:bg-background/80"
     >
-      <Sun className={`h-5 w-5 text-theme transition-all ${theme === 'light' ? 'rotate-0 scale-100' : '-rotate-90 scale-0'} absolute`} />
-      <Moon className={`h-5 w-5 text-theme transition-all ${theme === 'dark' ? 'rotate-0 scale-100' : 'rotate-90 scale-0'} absolute`} />
+      <Sun className="absolute h-5 w-5 text-theme transition-all duration-300" 
+          style={{ 
+            opacity: theme === 'light' ? 1 : 0,
+            transform: `scale(${theme === 'light' ? 1 : 0}) rotate(${theme === 'light' ? '0deg' : '-90deg'})`
+          }} 
+      />
+      <Moon className="absolute h-5 w-5 text-theme transition-all duration-300" 
+          style={{ 
+            opacity: theme === 'dark' ? 1 : 0,
+            transform: `scale(${theme === 'dark' ? 1 : 0}) rotate(${theme === 'dark' ? '0deg' : '90deg'})`
+          }} 
+      />
     </Button>
   );
 };

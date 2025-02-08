@@ -124,13 +124,13 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-background/90 transition-colors duration-300">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-      <div className="fixed top-6 right-6 flex items-center gap-4">
+      <div className="fixed top-6 right-6 flex items-center gap-4 z-50">
         <ThemeToggle />
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon"
-          onClick={handleLogout}
-          className="h-10 w-10 rounded-full bg-background/50 backdrop-blur-sm border border-theme/20 hover:bg-background/80"
+          onClick={() => handleLogout()}
+          className="relative h-10 w-10 rounded-full bg-background/50 backdrop-blur-sm border border-theme/20 hover:bg-background/80"
         >
           <LogOut className="h-4 w-4" />
         </Button>
