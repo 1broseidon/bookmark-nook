@@ -1,16 +1,26 @@
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Bookmark, ViewMode } from "@/types/bookmark";
-import { ExternalLink, Trash2 } from "lucide-react";
+import { Folder } from "@/types/folder";
+import { ExternalLink, FolderClosed, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
+  folders: Folder[];
   onDelete: (id: string) => void;
+  onMoveToFolder: (bookmarkId: string, folderId: string | null) => void;
   viewMode: ViewMode;
 }
 
-const BookmarkCard = ({ bookmark, onDelete, viewMode }: BookmarkCardProps) => {
+const BookmarkCard = ({ 
+  bookmark, 
+  folders, 
+  onDelete, 
+  onMoveToFolder,
+  viewMode 
+}: BookmarkCardProps) => {
   if (viewMode === 'list') {
     return (
       <Card className="group hover:shadow-md transition-all duration-300 border-theme/20 bg-background/70 backdrop-blur-sm animate-fade-in dark:bg-background/40">
@@ -44,23 +54,41 @@ const BookmarkCard = ({ bookmark, onDelete, viewMode }: BookmarkCardProps) => {
               </div>
             )}
           </div>
-          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 hover:bg-background/80"
-              onClick={() => window.open(bookmark.url, "_blank")}
+          <div className="flex items-center gap-2">
+            <Select
+              value={bookmark.folderId || ""}
+              onValueChange={(value) => onMoveToFolder(bookmark.id, value || null)}
             >
-              <ExternalLink className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
-              onClick={() => onDelete(bookmark.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Select folder" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">No folder</SelectItem>
+                {folders.map((folder) => (
+                  <SelectItem key={folder.id} value={folder.id}>
+                    {folder.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 hover:bg-background/80"
+                onClick={() => window.open(bookmark.url, "_blank")}
+              >
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                onClick={() => onDelete(bookmark.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </Card>
@@ -107,18 +135,41 @@ const BookmarkCard = ({ bookmark, onDelete, viewMode }: BookmarkCardProps) => {
         <p className="text-muted-foreground leading-relaxed line-clamp-2 font-light">
           {bookmark.description}
         </p>
-        {bookmark.tags && bookmark.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {bookmark.tags.map((tag) => (
-              <span
-                key={tag}
-                className="px-3 py-1 text-sm bg-theme/5 text-theme dark:text-theme-dark rounded-full font-light"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
+        <div className="flex items-center justify-between gap-4">
+          <Select
+            value={bookmark.folderId || ""}
+            onValueChange={(value) => onMoveToFolder(bookmark.id, value || null)}
+          >
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Select folder">
+                <div className="flex items-center gap-2">
+                  <FolderClosed className="h-4 w-4" />
+                  <span>{folders.find(f => f.id === bookmark.folderId)?.name || "No folder"}</span>
+                </div>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">No folder</SelectItem>
+              {folders.map((folder) => (
+                <SelectItem key={folder.id} value={folder.id}>
+                  {folder.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {bookmark.tags && bookmark.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {bookmark.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="px-3 py-1 text-sm bg-theme/5 text-theme dark:text-theme-dark rounded-full font-light"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

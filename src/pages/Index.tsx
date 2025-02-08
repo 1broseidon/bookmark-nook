@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { useFolders } from "@/hooks/useFolders";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { toast } from "@/components/ui/use-toast";
 
 const Index = () => {
   const [search, setSearch] = useState("");
@@ -78,6 +79,28 @@ const Index = () => {
 
       setBookmarks(items);
       await updateBookmarkPositions(items);
+    }
+  };
+
+  const handleMoveToFolder = async (bookmarkId: string, folderId: string | null) => {
+    try {
+      const bookmark = bookmarks.find(b => b.id === bookmarkId);
+      if (!bookmark) return;
+
+      const currentPosition = bookmarks.findIndex(b => b.id === bookmarkId);
+      if (currentPosition === -1) return;
+
+      await moveBookmark(bookmarkId, folderId, currentPosition);
+      toast({
+        title: "Bookmark moved",
+        description: `Bookmark moved to ${folderId ? folders.find(f => f.id === folderId)?.name : 'root folder'}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error moving bookmark",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -153,7 +176,9 @@ const Index = () => {
               ) : (
                 <BookmarkGrid
                   bookmarks={filteredBookmarks}
+                  folders={folders}
                   onDelete={deleteBookmark}
+                  onMoveToFolder={handleMoveToFolder}
                   viewMode={viewMode}
                 />
               )}

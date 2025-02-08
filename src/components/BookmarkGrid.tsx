@@ -1,15 +1,24 @@
 
 import { Bookmark, ViewMode } from "@/types/bookmark";
+import { Folder } from "@/types/folder";
 import BookmarkCard from "./BookmarkCard";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 interface BookmarkGridProps {
   bookmarks: Bookmark[];
+  folders: Folder[];
   onDelete: (id: string) => void;
+  onMoveToFolder: (bookmarkId: string, folderId: string | null) => void;
   viewMode: ViewMode;
 }
 
-const BookmarkGrid = ({ bookmarks, onDelete, viewMode }: BookmarkGridProps) => {
+const BookmarkGrid = ({ 
+  bookmarks, 
+  folders,
+  onDelete, 
+  onMoveToFolder,
+  viewMode 
+}: BookmarkGridProps) => {
   return (
     <Droppable droppableId="main">
       {(provided) => (
@@ -36,7 +45,9 @@ const BookmarkGrid = ({ bookmarks, onDelete, viewMode }: BookmarkGridProps) => {
                 >
                   <BookmarkCard
                     bookmark={bookmark}
+                    folders={folders}
                     onDelete={onDelete}
+                    onMoveToFolder={onMoveToFolder}
                     viewMode={viewMode}
                   />
                 </div>
