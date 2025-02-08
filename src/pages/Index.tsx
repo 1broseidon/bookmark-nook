@@ -122,21 +122,22 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background transition-colors duration-300">
-      <div className="fixed top-4 right-4 flex items-center gap-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-background/90 transition-colors duration-300">
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+      <div className="fixed top-6 right-6 flex items-center gap-4">
         <ThemeToggle />
         <Button
           variant="outline"
           size="icon"
           onClick={handleLogout}
-          className="bg-background hover:bg-background/80"
+          className="h-10 w-10 rounded-full bg-background/50 backdrop-blur-sm border border-theme/20 hover:bg-background/80"
         >
           <LogOut className="h-4 w-4" />
         </Button>
       </div>
-      <div className="container py-16 space-y-12 max-w-7xl mx-auto px-6">
+      <div className="container py-16 space-y-12 max-w-7xl mx-auto px-6 relative">
         <div className="text-center space-y-4">
-          <h1 className="text-5xl font-light tracking-tight">
+          <h1 className="text-5xl font-light tracking-tight bg-gradient-to-br from-foreground via-foreground/90 to-foreground/70 bg-clip-text text-transparent">
             Bookmark Manager
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -145,19 +146,23 @@ const Index = () => {
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-8">
           <div className="space-y-8">
-            <FolderList
-              folders={folders}
-              selectedFolderId={selectedFolderId}
-              onSelectFolder={setSelectedFolderId}
-              onCreateFolder={createFolder}
-              onReorderFolders={reorderFolders}
-            />
+            <div className="rounded-2xl bg-background/60 backdrop-blur-xl border border-theme/10 p-6 animate-fade-in">
+              <FolderList
+                folders={folders}
+                selectedFolderId={selectedFolderId}
+                onSelectFolder={setSelectedFolderId}
+                onCreateFolder={createFolder}
+                onReorderFolders={reorderFolders}
+              />
+            </div>
           </div>
           <div className="space-y-8">
-            <BookmarkForm 
-              onSubmit={(url) => addBookmark(url, selectedFolderId)} 
-              isLoading={isLoading} 
-            />
+            <div className="rounded-2xl bg-background/60 backdrop-blur-xl border border-theme/10 p-6 animate-fade-in">
+              <BookmarkForm 
+                onSubmit={(url) => addBookmark(url, selectedFolderId)} 
+                isLoading={isLoading} 
+              />
+            </div>
             <div className="flex items-center justify-between gap-4 max-w-2xl mx-auto">
               <SearchBar value={search} onChange={setSearch} />
               <ViewToggle viewMode={viewMode} onViewChange={updateViewMode} />
@@ -169,18 +174,20 @@ const Index = () => {
                   <p className="text-muted-foreground mt-2">Loading your bookmarks...</p>
                 </div>
               ) : bookmarks.length === 0 ? (
-                <div className="text-center py-24 text-muted-foreground bg-background/50 backdrop-blur-sm rounded-2xl border border-theme/20">
+                <div className="text-center py-24 bg-background/60 backdrop-blur-xl rounded-2xl border border-theme/10 animate-fade-in">
                   <p className="text-xl font-light">No bookmarks yet.</p>
-                  <p className="text-base mt-2">Add your first one above!</p>
+                  <p className="text-base mt-2 text-muted-foreground">Add your first one above!</p>
                 </div>
               ) : (
-                <BookmarkGrid
-                  bookmarks={filteredBookmarks}
-                  folders={folders}
-                  onDelete={deleteBookmark}
-                  onMoveToFolder={handleMoveToFolder}
-                  viewMode={viewMode}
-                />
+                <div className="rounded-2xl bg-background/60 backdrop-blur-xl border border-theme/10 p-6 animate-fade-in">
+                  <BookmarkGrid
+                    bookmarks={filteredBookmarks}
+                    folders={folders}
+                    onDelete={deleteBookmark}
+                    onMoveToFolder={handleMoveToFolder}
+                    viewMode={viewMode}
+                  />
+                </div>
               )}
             </DragDropContext>
           </div>
