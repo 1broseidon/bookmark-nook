@@ -14,6 +14,8 @@ interface BookmarkCardProps {
   viewMode: ViewMode;
 }
 
+const DEFAULT_COVER_IMAGE = "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b";
+
 const BookmarkCard = ({ 
   bookmark, 
   folders, 
@@ -97,15 +99,13 @@ const BookmarkCard = ({
 
   return (
     <Card className="group hover:shadow-lg transition-all duration-300 border-theme/20 bg-background/70 backdrop-blur-sm animate-scale-in dark:bg-background/40">
-      {bookmark.image && (
-        <div className="relative h-48 overflow-hidden rounded-t-lg">
-          <img
-            src={bookmark.image}
-            alt={bookmark.title}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        </div>
-      )}
+      <div className="relative h-48 overflow-hidden rounded-t-lg">
+        <img
+          src={bookmark.image || DEFAULT_COVER_IMAGE}
+          alt={bookmark.title}
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+        />
+      </div>
       <CardHeader className="space-y-2">
         <div className="flex items-start justify-between gap-3">
           <h3 className="font-light text-xl leading-tight line-clamp-2">
