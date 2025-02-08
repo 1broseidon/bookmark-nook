@@ -12,7 +12,7 @@ import { toast } from "@/components/ui/use-toast";
 import { Loader2, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { DragDropContext } from "@hello-pangea/dnd";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -31,12 +31,24 @@ const Index = () => {
     fetchBookmarks();
     fetchUserPreferences();
     fetchFolders();
-  }, []);
+
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        navigate('/auth');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   const checkUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       navigate('/auth');
+      return;
     }
   };
 
@@ -68,11 +80,17 @@ const Index = () => {
 
   const createFolder = async (name: string) => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('You must be logged in to create folders');
+      }
+
       const { data: folder, error } = await supabase
         .from('folders')
         .insert({
           name,
           position: folders.length,
+          user_id: session.user.id
         })
         .select()
         .single();
