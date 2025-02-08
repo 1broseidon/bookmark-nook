@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import BookmarkForm from "@/components/BookmarkForm";
@@ -6,31 +5,193 @@ import BookmarkGrid from "@/components/BookmarkGrid";
 import SearchBar from "@/components/SearchBar";
 import ThemeToggle from "@/components/ThemeToggle";
 import ViewToggle from "@/components/ViewToggle";
+import FolderList from "@/components/FolderList";
 import { Bookmark, ViewMode } from "@/types/bookmark";
+import { Folder } from "@/types/folder";
 import { toast } from "@/components/ui/use-toast";
 import { Loader2, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 const Index = () => {
   const navigate = useNavigate();
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [isLoadingBookmarks, setIsLoadingBookmarks] = useState(true);
   const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
+  const [isLoadingFolders, setIsLoadingFolders] = useState(true);
 
   useEffect(() => {
     checkUser();
     fetchBookmarks();
     fetchUserPreferences();
+    fetchFolders();
   }, []);
 
   const checkUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       navigate('/auth');
+    }
+  };
+
+  const fetchFolders = async () => {
+    try {
+      const { data: folders, error } = await supabase
+        .from('folders')
+        .select('*')
+        .order('position');
+
+      if (error) throw error;
+
+      setFolders(folders.map(f => ({
+        id: f.id,
+        name: f.name,
+        position: f.position,
+        createdAt: new Date(f.created_at),
+      })));
+    } catch (error: any) {
+      toast({
+        title: "Error fetching folders",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingFolders(false);
+    }
+  };
+
+  const createFolder = async (name: string) => {
+    try {
+      const { data: folder, error } = await supabase
+        .from('folders')
+        .insert({
+          name,
+          position: folders.length,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setFolders(prev => [...prev, {
+        id: folder.id,
+        name: folder.name,
+        position: folder.position,
+        createdAt: new Date(folder.created_at),
+      }]);
+
+      toast({
+        title: "Folder created",
+        description: "Your folder has been created successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error creating folder",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const reorderFolders = async (startIndex: number, endIndex: number) => {
+    const newFolders = Array.from(folders);
+    const [removed] = newFolders.splice(startIndex, 1);
+    newFolders.splice(endIndex, 0, removed);
+
+    setFolders(newFolders);
+
+    try {
+      const updates = newFolders.map((folder, index) => ({
+        id: folder.id,
+        position: index,
+      }));
+
+      const { error } = await supabase
+        .from('folders')
+        .upsert(updates);
+
+      if (error) throw error;
+    } catch (error: any) {
+      toast({
+        title: "Error updating folder order",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const moveBookmark = async (bookmarkId: string, folderId: string | null, newPosition: number) => {
+    try {
+      const { error } = await supabase
+        .from('bookmarks')
+        .update({
+          folder_id: folderId,
+          position: newPosition,
+        })
+        .eq('id', bookmarkId);
+
+      if (error) throw error;
+
+      // Update local state
+      setBookmarks(prev => prev.map(b => {
+        if (b.id === bookmarkId) {
+          return { ...b, folderId, position: newPosition };
+        }
+        return b;
+      }));
+    } catch (error: any) {
+      toast({
+        title: "Error moving bookmark",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDragEnd = async (result: any) => {
+    if (!result.destination) return;
+
+    const sourceId = result.source.droppableId;
+    const destinationId = result.destination.droppableId;
+    
+    // If moving between different droppable areas (folders)
+    if (sourceId !== destinationId) {
+      const bookmarkId = result.draggableId;
+      const newFolderId = destinationId === 'main' ? null : destinationId;
+      await moveBookmark(bookmarkId, newFolderId, result.destination.index);
+    } else {
+      // If reordering within the same droppable area
+      const items = Array.from(bookmarks);
+      const [reorderedItem] = items.splice(result.source.index, 1);
+      items.splice(result.destination.index, 0, reorderedItem);
+
+      setBookmarks(items);
+
+      // Update positions in the database
+      try {
+        const updates = items.map((bookmark, index) => ({
+          id: bookmark.id,
+          position: index,
+        }));
+
+        const { error } = await supabase
+          .from('bookmarks')
+          .upsert(updates);
+
+        if (error) throw error;
+      } catch (error: any) {
+        toast({
+          title: "Error updating bookmark order",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -110,7 +271,7 @@ const Index = () => {
       const { data: bookmarks, error } = await supabase
         .from('bookmarks')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('position');
 
       if (error) throw error;
 
@@ -121,6 +282,8 @@ const Index = () => {
         description: b.description || 'No description available',
         image: b.image_url,
         tags: b.tags || [],
+        folderId: b.folder_id,
+        position: b.position,
         createdAt: new Date(b.created_at),
       })));
     } catch (error: any) {
@@ -159,7 +322,9 @@ const Index = () => {
           description: description || 'No description available',
           image_url: image?.url,
           tags: publisher ? [publisher] : [],
-          user_id: session.user.id // Add this line to set the user_id
+          folder_id: selectedFolderId,
+          position: bookmarks.length,
+          user_id: session.user.id
         })
         .select()
         .single();
@@ -173,6 +338,8 @@ const Index = () => {
         description: bookmark.description,
         image: bookmark.image_url,
         tags: bookmark.tags,
+        folderId: bookmark.folder_id,
+        position: bookmark.position,
         createdAt: new Date(bookmark.created_at),
       };
 
@@ -230,14 +397,16 @@ const Index = () => {
     }
   };
 
-  const filteredBookmarks = bookmarks.filter(
-    (b) =>
-      b.title.toLowerCase().includes(search.toLowerCase()) ||
-      b.description.toLowerCase().includes(search.toLowerCase()) ||
-      b.tags?.some((tag) => tag.toLowerCase().includes(search.toLowerCase()))
-  );
+  const filteredBookmarks = bookmarks
+    .filter(b => 
+      (!selectedFolderId || b.folderId === selectedFolderId) &&
+      (b.title.toLowerCase().includes(search.toLowerCase()) ||
+       b.description.toLowerCase().includes(search.toLowerCase()) ||
+       b.tags?.some((tag) => tag.toLowerCase().includes(search.toLowerCase())))
+    )
+    .sort((a, b) => a.position - b.position);
 
-  if (isLoadingPreferences) {
+  if (isLoadingPreferences || isLoadingFolders) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -267,29 +436,42 @@ const Index = () => {
             Save and organize your favorite links in a beautiful, minimalist space
           </p>
         </div>
-        <div className="space-y-8">
-          <BookmarkForm onSubmit={addBookmark} isLoading={isLoading} />
-          <div className="flex items-center justify-between gap-4 max-w-2xl mx-auto">
-            <SearchBar value={search} onChange={setSearch} />
-            <ViewToggle viewMode={viewMode} onViewChange={updateViewMode} />
-          </div>
-          {isLoadingBookmarks ? (
-            <div className="text-center py-24">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-              <p className="text-muted-foreground mt-2">Loading your bookmarks...</p>
-            </div>
-          ) : bookmarks.length === 0 ? (
-            <div className="text-center py-24 text-muted-foreground bg-background/50 backdrop-blur-sm rounded-2xl border border-theme/20">
-              <p className="text-xl font-light">No bookmarks yet.</p>
-              <p className="text-base mt-2">Add your first one above!</p>
-            </div>
-          ) : (
-            <BookmarkGrid
-              bookmarks={filteredBookmarks}
-              onDelete={deleteBookmark}
-              viewMode={viewMode}
+        <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-8">
+          <div className="space-y-8">
+            <FolderList
+              folders={folders}
+              selectedFolderId={selectedFolderId}
+              onSelectFolder={setSelectedFolderId}
+              onCreateFolder={createFolder}
+              onReorderFolders={reorderFolders}
             />
-          )}
+          </div>
+          <div className="space-y-8">
+            <BookmarkForm onSubmit={addBookmark} isLoading={isLoading} />
+            <div className="flex items-center justify-between gap-4 max-w-2xl mx-auto">
+              <SearchBar value={search} onChange={setSearch} />
+              <ViewToggle viewMode={viewMode} onViewChange={updateViewMode} />
+            </div>
+            <DragDropContext onDragEnd={handleDragEnd}>
+              {isLoadingBookmarks ? (
+                <div className="text-center py-24">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+                  <p className="text-muted-foreground mt-2">Loading your bookmarks...</p>
+                </div>
+              ) : bookmarks.length === 0 ? (
+                <div className="text-center py-24 text-muted-foreground bg-background/50 backdrop-blur-sm rounded-2xl border border-theme/20">
+                  <p className="text-xl font-light">No bookmarks yet.</p>
+                  <p className="text-base mt-2">Add your first one above!</p>
+                </div>
+              ) : (
+                <BookmarkGrid
+                  bookmarks={filteredBookmarks}
+                  onDelete={deleteBookmark}
+                  viewMode={viewMode}
+                />
+              )}
+            </DragDropContext>
+          </div>
         </div>
       </div>
     </div>

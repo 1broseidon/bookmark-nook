@@ -6,6 +6,8 @@ export interface Bookmark {
   description: string;
   image?: string;
   tags?: string[];
+  folderId?: string | null;
+  position: number;
   createdAt: Date;
 }
 
